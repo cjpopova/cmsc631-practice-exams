@@ -1,3 +1,11 @@
+From Coq Require Import Lia.
+From Coq Require Import Arith.Arith.
+From Coq Require Import Bool.Bool.
+Require Export Coq.Strings.String.
+From Coq Require Import Logic.FunctionalExtensionality.
+From Coq Require Import Lists.List.
+Import ListNotations.
+
 Module q1.
 (* Q1
 a. fun (x : bool) => [x]
@@ -48,12 +56,16 @@ Inductive heap_wf : tree -> Prop :=
 
 (* Satisfies definition: *) 
 Example heap1 : heap_wf ex_tree_1. Proof. repeat constructor. Qed. (* Trivially satisfies definition: *) 
-Example heap2 : heap_wf Empty. Proof. repeat constructor. Qed. (* The right subtree of ex_tree_2 does not satisfy the heap property: *) 
-Example not_heap_1 : ~ (heap_wf (Node 5 (Node 2 Empty Empty) (Node 7 Empty Empty))). (* Therefore ex_tree_2 is also not a valid heap: *) 
-Proof. unfold not. intros. inversion H. inversion H2. (* do something with H8 *) Admitted.
-Example not_heap_2 : ~ (heap_wf ex_tree_2). Proof. Admitted.
+Example heap2 : heap_wf Empty. Proof. repeat constructor. Qed. 
+(* The right subtree of ex_tree_2 does not satisfy the heap property: *) 
+Example not_heap_1 : ~ (heap_wf (Node 5 (Node 2 Empty Empty) (Node 7 Empty Empty))). 
+Proof. unfold not. intros. inversion H; subst. inversion H2; subst. lia. Qed.
+(* Therefore ex_tree_2 is also not a valid heap: *) 
+Example not_heap_2 : ~ (heap_wf ex_tree_2). 
+Proof. unfold not. intros. inversion H; subst. (* do something with not_heap_1 here *) Admitted.
 
-(* NOTE: pop answer not shown, but I think Leo said we wouldn't have something like on the exam *)
+(* part c*)
+(* TODO *)
 
 End q2.
 
@@ -61,10 +73,59 @@ End q2.
 
 Module q3.
 
-(* TODO
+(* part a *)
 
-Loop invariant: invariant: X <= 42 /\ m + Y = X 
+(* 
 
+Template, where P is the loop invariant:
+
+{{ m < 42 }}->> 
+{{ }} 
+     X := m 
+{{ }}
+     Y := 0; 
+{{ P }}
+     WHILE X < 42 DO 
+{{ P /\ X<42 }} ->>    
+{{ }}
+     X := X + 1;
+{{ }}
+     Y := Y + 1
+{{ P }}
+     DONE 
+{{ P /\ X>=42}} ->>
+{{ X = 42 /\ Y = 42 - m }}
+
+
+
+P: X = m + Y /\ X <= 42
+
+{{ m < 42 }}->> 
+{{m = m + 0 /\ m <= 42 }}
+     X := m 
+{{X = m + 0 /\ X <= 42 }}
+     Y := 0; 
+{{ X = m + Y /\ X <= 42 }}
+     WHILE X < 42 DO 
+{{ X = m + Y /\ X <= 42 /\ X < 42 }} ->>    
+{{ X + 1 = m + Y + 1 /\ X + 1 <= 42 }}
+     X := X + 1;
+{{ X = m + Y + 1 /\ X <= 42 }}
+     Y := Y + 1
+{{ X = m + Y /\ X <= 42 }}
+     DONE 
+{{ X = m + Y /\ X <= 42 /\ X >= 42}} ->>
+{{ X = 42 /\ Y = 42 - m }}
+
+*)
+
+(* part b *)
+
+(*
+i. equivalent
+ii. X = 43
+iii. X = 43
+iv. equivalent
 *)
 
 End q3.
@@ -73,7 +134,9 @@ End q3.
 
 Module q4.
 
-(* TODO: review me
+(* part a *)
+
+(*
 
 we'll start with the hoare_if rule and rewrite it into the nonzero form:
 
@@ -87,9 +150,11 @@ we'll start with the hoare_if rule and rewrite it into the nonzero form:
 {P /\ a=0} skip {Q}
 ---------------------------(hoare_nonzero)
 {P} ifnz a c {Q}
+*)
 
+(* part b *)
 
-extending the evaluation relation:
+(* There are 2 options:
 
 (* the easy way: compile to if *)
 | E_ifnz : forall ...
@@ -97,15 +162,13 @@ extending the evaluation relation:
     st =[ ifnx a c ]=> st'
 
 (* slightly harder way*)
-| E_ifnz_true : forall ...
+| E_ifnz_true : forall a, c, st
     aeval a = 0 ->
-    st =[ ifnx a c ]=> st
-| E_ifnz_false: forall ...
+    st =[ ifnx a c ]=> st (* don't execute skip *)
+| E_ifnz_false: forall a, c, st, st'
     aeval a != 0 ->
     st =[ c ]=> st' ->
-    st =[ ifnx a c ]=> st'
-
-
+    st =[ ifnz a c ]=> st'
 *)
 
 End q4.

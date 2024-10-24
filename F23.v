@@ -1,3 +1,4 @@
+From Coq Require Import Lia.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Bool.Bool.
 Require Export Coq.Strings.String.
@@ -24,14 +25,18 @@ Module q2.
 (*
 a. fun (b:bool) => [42] (* returning [] is trival *)
 b. fun (X Y: Prop) => tt (* tt is Unit *)
-c. empty
+c. empty (* we can't return a term of type Y since no arguments of type Y are bound *)
 d. fun (X Y : Type) (y : Y) => y
 e. (1, True)
-f. [fun (pr : bool * bool) => fst pr] ; assuming that fst is the pair accessor
-g. fun (X : Prop) => None (* the trivial case is OK here since you can
-t write anything with Some here *)
-h. empty 
-i. fun (x y : nat) => conj eq_refl eq_refl (* this is a proof object (TODO review this) *)
+f. [fun (pr : bool * bool) => fst pr] (* assuming that fst is the pair accessor *)
+g. fun (X : Prop) => None (* the trivial case is OK here since you can't write anything with Some here *)
+h. empty (* this is clearly false*)
+i. fun (x y : nat) => conj eq_refl eq_refl 
+    (* 
+    since the result is a Prop, we need to construct a proof object out of these pieces:
+    eq_refl : x = x.
+    conj  : forall A B : Prop, A -> B -> A /\ B
+     *)
 *)
 
 End q2.
@@ -44,24 +49,12 @@ Inductive tree :=
     | Empty : tree 
     | Node : nat -> tree -> tree -> tree.
 
-Definition ex_tree_1 : tree :=
-     Node 1 
-        (Node 5 
-            (Node 17 Empty Empty) 
-            (Node 10 Empty Empty)) 
-        (Node 5 
-         (Node 10 Empty Empty)
-         (Node 17 Empty Empty)).
+Definition ex_tree_1 : tree := Node 1 (Node 5 (Node 17 Empty Empty) (Node 10 Empty Empty)) (Node 5 (Node 10 Empty Empty) (Node 17 Empty Empty)).
+Definition ex_tree_2 : tree := Node 0 (Node 10 Empty Empty) (Node 5 (Node 2 Empty Empty) (Node 7 (Node 42 Empty Empty) (Node 8 Empty Empty))).
 
-Definition ex_tree_2 : tree := 
-    Node 0 
-        (Node 10 Empty Empty) 
-        (Node 5 
-            (Node 2 Empty Empty) 
-            (Node 7 
-                (Node 42 Empty Empty) 
-                (Node 8 Empty Empty))).
+(* part a *)
 
+(* check if t1 is a mirror of t2 *)
 Fixpoint check_mirror (t1 t2 : tree) : bool :=
     match t1, t2 with
     | Empty, Empty => true
@@ -78,10 +71,11 @@ Fixpoint is_sym (t:tree) : bool := check_mirror t t.
 Example sym_Empty : is_sym Empty = true. Proof. reflexivity. Qed.
 (* Examples *) 
 Example sym_1 : is_sym ex_tree_1 = true. Proof. reflexivity. Qed.
-Example sym_2 : is_sym ex_tree_2 = false. Proof. Admitted.
+Example sym_2 : is_sym ex_tree_2 = false. Proof. reflexivity. Qed.
 
 (* part b *)
 
+(* the inductive relation has a helper to mirror the fixpoint implementation: *)
 Inductive mirror : tree -> tree -> Prop :=
     | Mirror_Empty : mirror Empty Empty
     | Mirror_Node : forall (v : nat) (l1 r1 l2 r2 : tree),
@@ -100,7 +94,8 @@ Inductive sym : tree -> Prop :=
 Example Sym_Empty : sym Empty. Proof. repeat constructor. Qed.
 (* Examples *) 
 Example Sym_1 : sym ex_tree_1.  Proof. repeat constructor. Qed.
-(* tree 2 is not balanced*)
+Example Sym_2 : ~ (sym ex_tree_2). 
+Proof. unfold not. intros. inversion H. inversion H0. inversion H4. Qed.
 
 End q3.
 
@@ -124,17 +119,21 @@ Notation "'2^' x" := (power_of_2 x) (at level 100).
 
 template:
 
-{{True}}
+{{True}} ->>
+{{ }}
 X := m;
+{{ }}
 Y := 0;
+{{ }}
 Z := 1;
-{{ }} ->>
 {{ P }}
 WHILE X > 0 DO
     {{ P /\ X > 0 }} ->>
-    {{}}
+    {{ }}
     X := X - 1; 
+    {{ }}
     Y := Z + Y; 
+    {{ }}
     Z := Z + Z; 
     {{ P }}
 DONE
@@ -145,53 +144,45 @@ Y := Y + 1
 
 
 Notes:
+Suppose m=4.
+Value of each variable after each loop iteration:
+X   3   2   1   0
+Y   1   3   7   15
+Z   2   4   8   16
 
-2^m = 2^(m-1) + 2^(m-2) ... + 2^0 + 1
+The pattern: 2^m = 2^(m-1) + 2^(m-2) ... + 2^0 + 1
+Examples:
 - 2^2 = 2^1 + 2^0 + 1
 - 2^3 = 8 = 2^2 + 2^1 + 2^0 + 1
 
-- the +1 is added after the loop
-- X decreases by 1 on each loop
-- Z doubles on each loop
+loop invariant P : Z=2^(m-X) /\ Y + 1 = Z
 
-loop invariant P : Y = 2^(m-X)-1 /\ Z=2^(m-X)  
-you can also write Y + 1 = Z
-
-
-
+Filled in:
 
 {{True}} ->>
-{{ m = m}}
+{{ 1=2^0 /\ 1 = 1 }}
 X := m;
-{{ X = m }}
+{{ 1=2^(m-X) /\ 0 + 1 = 1 }}
 Y := 0;
-{{ X = m /\ y = 0 }} 
+{{ 1=2^(m-X) /\ Y + 1 = 1 }}
 Z := 1;
-{{ X = m /\ y = 0 /\ Z = 1 }} ->>
-{{ Y = 2^(m-X)-1 /\ Z=2^(m-X)  
-
-which is equivalent to
-Y = 2^0-1 /\ Z=2^0
-   }}
+{{ Z=2^(m-X) /\ Y + 1 = Z }}
 WHILE X > 0 DO
-    {{ P /\ X > 0 }} ->>
-    {{ ??? }}
+    {{ Z=2^(m-X) /\ Y + 1 = Z /\ X > 0 }} ->>
+    {{ Z + Z = 2^(m-(X-1)) /\ Y + 1 = Z }}
     X := X - 1; 
-    {{ Z + Y = 2^(m-X)-1 /\ Z+Z=2^(m-X)   }}
+    {{ Z + Z = 2^(m-X) /\ Z + Y + 1 = Z + Z }}
     Y := Z + Y; 
-    {{ Y = 2^(m-X)-1 /\ Z+Z=2^(m-X)   }}
+    {{ Z + Z = 2^(m-X) /\ Y + 1 = Z + Z }}
     Z := Z + Z; 
-    {{ Y = 2^(m-X)-1 /\ Z=2^(m-X)   }}
+    {{ Z=2^(m-X) /\ Y + 1 = Z }}
 DONE
-{{ Y = 2^(m-X)-1 /\ Z=2^(m-X) /\ X <= 0 }} ->>
+{{ Z=2^(m-X) /\ Y + 1 = Z /\ X <= 0 }} ->>
 {{ Y+1 = 2^m }}
 Y := Y + 1
 {{ Y = 2^m }}
 
-
 *)
-
-
 
 End q4.
 

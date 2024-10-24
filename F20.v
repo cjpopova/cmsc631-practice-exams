@@ -15,8 +15,8 @@ d. empty
 e. (True, True) (* I am pretty sure * means pair here *)
 f. Some (fun (p : (Prop * Prop) => (fst p)))
 g. fun (X: Type) => []
-h. empty (* not sure about this *)
-i. (* TODO: review proof objects *)
+h. empty
+i. fun (P Q: Prop) (p : P) (q : Q) => conj p q
 *)
 End q1.
 

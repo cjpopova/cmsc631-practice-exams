@@ -31,6 +31,8 @@ Definition ex_tree_1 : tree := Node 1 (Node 5 (Node 17 Empty Empty) (Node 10 Emp
 
 Definition ex_tree_2 : tree := Node 0 (Node 10 Empty Empty) (Node 5 (Node 2 Empty Empty) (Node 7 Empty Empty)).
 
+(* part a *)
+
 (*
 Auxilary helper inductive relation:
 A tree + n:nat satisfies heap_aux the value of its top Node (x) is geq n
@@ -62,10 +64,27 @@ Example not_heap_1 : ~ (heap_wf (Node 5 (Node 2 Empty Empty) (Node 7 Empty Empty
 Proof. unfold not. intros. inversion H; subst. inversion H2; subst. lia. Qed.
 (* Therefore ex_tree_2 is also not a valid heap: *) 
 Example not_heap_2 : ~ (heap_wf ex_tree_2). 
-Proof. unfold not. intros. inversion H; subst. (* do something with not_heap_1 here *) Admitted.
+Proof. unfold not. intros. inversion H; subst. 
+     inversion H4; subst.
+     inversion H7; subst.
+     lia.
+     Qed.
 
-(* part c*)
-(* TODO *)
+(* part b *)
+
+Definition pop : tree -> option (nat * tree)
+     (* Implementation assumed *)
+. Admitted.
+
+Fixpoint heapsort (n : nat) (t : tree) : list nat :=
+     match n, t with
+     | 0, t => [] (* out of fuel *)
+     | S n', t => 
+          match (pop t) with 
+          | None => [] (* nothing left on the heap *)
+          | Some (v, t') => v :: (heapsort n' t')
+          end
+     end.
 
 End q2.
 

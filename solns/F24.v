@@ -10,7 +10,7 @@ Module q1.
 
 (*
 a. [Option nat]                 List Type
-b. [fun x => x;fun x =>42]      list (nat -> nat)
+b. [fun x => x; fun x => 42]    list (nat -> nat)
 c. fun (x:X) => or_introl x x   ill typed
 d. fun (x: nat->nat) y => y x   (nat -> nat) -> ((nat -> nat) -> A) -> A
 e. Some (fun y => y y)          ill typed
@@ -23,16 +23,16 @@ End q1.
 Module q2.
 
 (*
-a. 
-b. empty
-c. empty
-d. 
-e. (True, true)
-f. [fst]
-g. 
-h. ill typed
-i. fun (x y H) => eq_refl y
-j. fun (x y H) => H
+a. list nat -> option nat                   fun (x : list nat) => Some 1
+b. forall (X Y : Prop), X*Y                 empty
+c. forall (X Y Z : Type) X -> Y -> Z        empty
+d. forall (X Y Z : Type) X -> Y -> Z -> Y   fun (X Y Z : Type) (x:X) (y:Y) (z:Z) => y
+e. Prop * bool                              (True, true)
+f. list (bool*nat -> bool)                  [fst]
+g. forall (X : Prop), option (list X)       fun (X : Prop) => Some []
+h. forall (x y : nat), x ^ y                ill typed
+i. forall (x y : nat), x=x -> y=y           fun (x y H) => eq_refl y
+j. forall (x y : nat),, x=y -> x=y          fun (x y H) => H
 *)
 
 End q2.
@@ -79,10 +79,36 @@ End q4.
 
 Module q5.
 
+Inductive tree := 
+    | Empty : tree 
+    | Node : nat -> tree -> tree -> tree.
+
+Inductive tree' := 
+    | Empty' : tree' 
+    | Node' : nat -> (tree'* tree') -> tree'.
+
+Definition ex_tree_1 : tree := Node 1 (Node 5 (Node 17 Empty Empty) (Node 10 Empty Empty)) (Node 5 (Node 17 Empty Empty) (Node 10 Empty Empty)).
+
+Definition ex_tree_2 : tree := Node 0 (Node 10 Empty Empty) (Node 5 (Node 2 Empty Empty) (Node 7 (Node 42 Empty Empty) (Node 8 Empty Empty))).
+
 (* part a *)
+
+Fixpoint convert (t:tree) : tree' :=
+    match t with
+    | Empty => Empty'
+    | Node x l r => Node' x (convert l, convert r)
+    end.
 
 (* part b *)
 
+Inductive Convert : tree -> tree' -> Prop :=
+    | Conv_empty : Convert Empty Empty'
+    | Conv_node : forall x l l' r r',
+        (* x is syntactically equal in both t and t' *)
+        Convert l l' ->
+        Convert r r' ->
+        Convert (Node x l r) (Node' x (l', r'))
+    .
 
 (* part c
 
